@@ -30,9 +30,6 @@ def detect_ECB_mode(ciphertext):
         blocks.add(block)
     return False
 
-def detect_single_char_xor(ciphertext):
-    pass
-
 def count_ones_in_byte(x):
     if x == 0:
         return 0

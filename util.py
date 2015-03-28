@@ -1,6 +1,8 @@
 import base64
 import binascii
 import random
+import struct
+import math
 from Crypto.Cipher import AES
 
 def open_base64_file(filename):
@@ -41,6 +43,8 @@ def unpadding(string):
     return string[0:len(string)-k]
 
 def get_ith_block(data, i, block_size):
+    if (i+1)*block_size > len(data):
+        return data[i*block_size:]
     return data[i*block_size:(i+1)*block_size]
 
 def ecb_encrypt(plaintext, key):
@@ -74,4 +78,17 @@ def cbc_decrypt(ciphertext, key, iv = bytes([0])*16):
         prev_ciphertext_block = ciphertext_block
     return unpadding(plaintext)
 
+def ctr_encrypt(plaintext, key, nonce = 0):
+    AES_obj = AES.new(key, AES.MODE_ECB)
+    nonce = struct.pack('<Q', nonce)
+    ciphertext = b''
+    block_size = 16
+    for i in range(math.ceil(len(plaintext)/block_size)):
+        counter = struct.pack('<Q', i)
+        keystream = AES_obj.encrypt(nonce + counter)
+        p_block = get_ith_block(plaintext, i, block_size)
+        ciphertext += xor(p_block, keystream)
+    return ciphertext
 
+def ctr_decrypt(ciphertext, key, nonce = 0):
+    return ctr_encrypt(ciphertext, key, nonce)
