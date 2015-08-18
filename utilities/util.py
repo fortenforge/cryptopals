@@ -72,7 +72,7 @@ def cbc_decrypt(ciphertext, key, iv = bytes([0])*16):
     prev_ciphertext_block = iv
     ciphertext_block = iv
     for i in range(len(ciphertext)//16):
-        ciphertext_block= ciphertext[16*i:16*(i+1)]
+        ciphertext_block = ciphertext[16*i:16*(i+1)]
         plaintext_block = xor(AES_obj.decrypt(ciphertext_block),prev_ciphertext_block)
         plaintext += plaintext_block
         prev_ciphertext_block = ciphertext_block
