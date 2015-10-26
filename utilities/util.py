@@ -45,6 +45,10 @@ def random_word():
       word = new_word
   return word.strip()
 
+def zero_padding(string, length):
+  k = length - (len(string) % length)
+  return string + k*bytes([0])
+
 def padding(string, length):
   k = length - (len(string) % length)
   return string + k*bytes([k])

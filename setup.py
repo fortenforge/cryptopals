@@ -10,6 +10,8 @@ setup(
     'utilities'
   ],
   install_requires = [
-    'pycrypto == 2.6.1'
+    'pycrypto == 2.6.1',
+    'flask == 0.10.1',
+    'urllib3 == 1.12'
   ]
 )
