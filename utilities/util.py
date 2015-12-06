@@ -107,3 +107,7 @@ def ctr_encrypt(plaintext, key, nonce = 0):
 
 def ctr_decrypt(ciphertext, key, nonce = 0):
   return ctr_encrypt(ciphertext, key, nonce)
+
+def int_to_bytes(n):
+  byte_length = math.ceil(n.bit_length() / 8.0)
+  return n.to_bytes(byte_length, 'big')
