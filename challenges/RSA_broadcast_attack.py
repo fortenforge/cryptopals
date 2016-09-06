@@ -5,15 +5,6 @@ import RSA as rsa
 
 # Challenge 40
 
-# Uses Newton's method
-def iroot(k, n):
-  u, s = n, n+1
-  while u < s:
-    s = u
-    t = (k-1) * s + n // pow(s, k-1)
-    u = t // k
-  return s
-
 def broadcast_attack(c1, c2, c3, p1, p2, p3):
   _, n1 = p1
   _, n2 = p2
@@ -28,7 +19,7 @@ def broadcast_attack(c1, c2, c3, p1, p2, p3):
   x3 = c3 * n1 * n2 * util.modinv(n1 * n2, n3)
 
   m_cubed = (x1 + x2 + x3) % (n1 * n2 * n3)
-  m = iroot(3, m_cubed)
+  m = util.iroot(3, m_cubed)
   return util.int_to_bytes(m)
 
 

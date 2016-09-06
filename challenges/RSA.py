@@ -1,20 +1,18 @@
 from utilities import util
 
 import binascii
-from Crypto.Util.number import getPrime
+from Crypto.Util.number import getStrongPrime
 
 # Challenge 39
 
 SIZE = 1024
 
 def generate_keys(size = SIZE):
-  p = getPrime(size)
-  q = getPrime(size)
+  e = 3
+  p = getStrongPrime(size, e)
+  q = getStrongPrime(size, e)
   n = p * q
   phi = (p - 1) * (q - 1)
-  e = 3
-  if phi % e == 0:
-    return generate_keys(size)
   d = util.modinv(e, phi)
   public_key = (e, n)
   private_key = (d, n)
