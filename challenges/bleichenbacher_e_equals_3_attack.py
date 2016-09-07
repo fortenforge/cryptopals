@@ -7,6 +7,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA
 from Crypto.Util import asn1
 
+# Challenge 42
+
 def faulty_verifier(message, signature, key):
   n = key.n
   e = 3
