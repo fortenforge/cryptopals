@@ -7,10 +7,9 @@ from Crypto.Util.number import getStrongPrime
 
 SIZE = 1024
 
-def generate_keys(size = SIZE):
-  e = 3
-  p = getStrongPrime(size, e)
-  q = getStrongPrime(size, e)
+def generate_keys(size = SIZE, e = 3):
+  p = getStrongPrime(size // 2, e)
+  q = getStrongPrime(size // 2, e)
   n = p * q
   phi = (p - 1) * (q - 1)
   d = util.modinv(e, phi)
