@@ -39,7 +39,6 @@ def recover_message(ciphertext):
       left = mid + 1
 
   m = left
-  print(left)
   return util.int_to_bytes(m)
 
 
