@@ -43,7 +43,7 @@ def recover_message(ciphertext):
 
 
 if __name__ == '__main__':
-  public_key, private_key = rsa.generate_keys(size = KEY_SIZE, e = 65537)
+  public_key, private_key = rsa.generate_keys(size = KEY_SIZE)
   message = base64.b64decode('VGhhdCdzIHdoeSBJIGZvdW5kIHlvdSBkb24ndCBwbGF5IGFyb3VuZCB3aXRoIHRoZSBGdW5reSBDb2xkIE1lZGluYQ==')
   ciphertext = rsa.encrypt(message, public_key)
   m = recover_message(ciphertext)

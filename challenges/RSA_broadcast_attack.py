@@ -24,9 +24,9 @@ def broadcast_attack(c1, c2, c3, p1, p2, p3):
 
 
 if __name__ == '__main__':
-  p1, _ = rsa.generate_keys()
-  p2, _ = rsa.generate_keys()
-  p3, _ = rsa.generate_keys()
+  p1, _ = rsa.generate_keys(e = 3)
+  p2, _ = rsa.generate_keys(e = 3)
+  p3, _ = rsa.generate_keys(e = 3)
 
   m = b'rsa br0adca5t att4ck'
 

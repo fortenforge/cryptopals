@@ -7,8 +7,9 @@ from Crypto.Util.number import getPrime, getStrongPrime
 
 SIZE = 1024
 
-def generate_keys(size = SIZE, e = 3):
-  if size < 512:
+def generate_keys(size = SIZE, e = 65537):
+  if size < 1024:
+    # getStrongPrime can only output >= 512 bit primes
     p = getPrime(size // 2)
     q = getPrime(size // 2)
   else:

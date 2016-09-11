@@ -3,13 +3,13 @@ from utilities import util
 import RSA as rsa
 import binascii
 
-# Challenge 47
+# Challenge 48
 
 public_key = None
 private_key = None
 B = None
 
-SIZE = 256
+SIZE = 768
 k = SIZE // 8
 
 def pkcs_oracle(ciphertext):
@@ -51,8 +51,15 @@ def search_for_pkcs_messages(i, c0, M, s):
       if pkcs_oracle(util.int_to_bytes(c)):
         return s_new
       s_new += 1
+  elif len(M) > 1: # 2.b
+    s_new = s + 1
+    while True:
+      c = compute_homomorphic_c(c0, s_new)
+      if pkcs_oracle(util.int_to_bytes(c)):
+        return s_new
+      s_new += 1
   else: # 2.c
-    (a, b) = M
+    (a, b) = M[0]
     r = 2 * ceil_div(b * s - 2 * B, n)
     while True:
       s_left = ceil_div(2 * B + r * n, b)
@@ -69,20 +76,22 @@ def search_for_pkcs_messages(i, c0, M, s):
   return None
 
 def update_interval(M, s):
-  (a, b) = M
   e, n = public_key
-  new_a = a
-  new_b = b
+  M_new = []
 
-  r_left = ceil_div(a * s - 3 * B + 1, n)
-  r_right = (b * s - 2 * B) // n
+  for (a, b) in M:
+    new_a = a
+    new_b = b
 
-  for r in range(r_left, r_right + 1):
-    new_left = max(a, ceil_div(2 * B + r * n, s))
-    new_right = min(b, (3 * B - 1 + r * n) // s)
-    if new_left <= new_right:
-      # Just accept the first one we find for now
-      return (new_left, new_right)
+    r_left = ceil_div(a * s - 3 * B + 1, n)
+    r_right = (b * s - 2 * B) // n
+
+    for r in range(r_left, r_right + 1):
+      new_left = max(a, ceil_div(2 * B + r * n, s))
+      new_right = min(b, (3 * B - 1 + r * n) // s)
+      if new_left <= new_right:
+        M_new.append((new_left, new_right))
+  return M_new
 
 def recover_message(ciphertext):
   # Setup
@@ -94,7 +103,7 @@ def recover_message(ciphertext):
   # is not necessary
   c = int(binascii.hexlify(ciphertext), 16)
   s = 1
-  M = (2*B, 3*B - 1) # Only dealing with a single interval ever
+  M = [(2*B, 3*B - 1)]
   i = 1
 
   while True:
@@ -103,8 +112,8 @@ def recover_message(ciphertext):
     # Step 3
     M = update_interval(M, s)
     # Step 4
-    if M[0] == M[1]:
-      plaintext = util.int_to_bytes(M[0])
+    if len(M) == 1 and M[0][0] == M[0][1]:
+      plaintext = util.int_to_bytes(M[0][0])
       return pkcs_unpad(plaintext)
     i += 1
 
