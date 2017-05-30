@@ -34,8 +34,9 @@ def find_keysize(c):
       keysize_final = keysize
   return keysize_final
 
-def break_repeating_key_xor(ciphertext):
-  keysize = find_keysize(ciphertext)
+def break_repeating_key_xor(ciphertext, keysize=None):
+  if not keysize:
+    keysize = find_keysize(ciphertext)
   trans_ciphertext = [b'']*keysize
 
   for k in range(len(ciphertext)):
