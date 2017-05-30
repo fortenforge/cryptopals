@@ -93,6 +93,10 @@ def cbc_decrypt(ciphertext, key, iv = bytes([0])*16):
     prev_ciphertext_block = ciphertext_block
   return unpadding(plaintext)
 
+def cbc_mac(message, key, iv = b'\x00' * 16):
+  c = cbc_encrypt(message, key, iv)
+  return c[-16:]
+
 def ctr_encrypt(plaintext, key, nonce = 0):
   AES_obj = AES.new(key, AES.MODE_ECB)
   nonce = struct.pack('<Q', nonce)
