@@ -2,6 +2,8 @@ from utilities import util
 import binascii
 import os
 
+# Challenge 50
+
 original = b"alert('MZA who was that?');\n"
 new = b"alert('Ayo, the Wu is back!')\n//"
 the_hash = b'296b8d7cb78a243dda4d0a61d33bbdd1'

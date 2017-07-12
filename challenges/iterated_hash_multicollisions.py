@@ -1,6 +1,8 @@
 from utilities import util
 import binascii
 
+# Challenge 52
+
 STATE_LEN = 2 # 16 bits
 AES_BLOCK_SIZE = 16
 

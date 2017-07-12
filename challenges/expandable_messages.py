@@ -1,6 +1,8 @@
 from utilities import util
 import binascii
 
+# Challenge 53
+
 STATE_LEN = 4 # 32 bits
 BLOCK_SIZE = 16 # 128 bits
 LEN_ENC_SIZE = 8 # 64 bits

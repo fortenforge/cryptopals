@@ -1,4 +1,5 @@
 import random
+
 # Challenge 33
 
 P_NIST = int(('ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024'
