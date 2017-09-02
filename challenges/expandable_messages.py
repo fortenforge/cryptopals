@@ -53,7 +53,7 @@ def md_hash(message):
     h = util.ecb_encrypt(Mi, util.padding(h, BLOCK_SIZE))[0:STATE_LEN]
   return binascii.hexlify(h)
 
-# instrumneted md hash (no padding, can specify initial state)
+# instrumented md hash (no padding, can specify initial state)
 def md_hash_instrumented(M, H = initial_state):
   for i in range(len(M) // BLOCK_SIZE):
     Mi = util.get_ith_block(M, i, BLOCK_SIZE)
