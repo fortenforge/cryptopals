@@ -91,6 +91,9 @@ def make_md_hash(compress_function, state_to_hash_function, length_to_bytes_func
 def _left_rotate(n, b):
   return ((n << b) | ((n & 0xffffffff) >> (32 - b))) & 0xffffffff
 
+def _right_rotate(n, b):
+  return ((n >> b) | ((n & 0xffffffff) << (32 - b))) & 0xffffffff
+
 def _f(x, y, z): return x & y | ~x & z
 def _g(x, y, z): return x & y | x & z | y & z
 def _h(x, y, z): return x ^ y ^ z
