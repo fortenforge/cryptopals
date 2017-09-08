@@ -5,7 +5,7 @@ import struct
 
 # Notes
 #   * Wang et. al uses 1-indexing in their paper, for reasons
-#     passing understanding. We'll use 0-indexing here
+#     passing understanding. We'll use 0-indexing here.
 
 def f(x, y, z): return hashes._f(x, y, z)
 def g(x, y, z): return hashes._g(x, y, z)
@@ -17,7 +17,7 @@ def rrot(m, s): return hashes._right_rotate(m, s)
 # helper methods to adjust the state variables
 # to satisfy wang's constraints
 def correct_bit_equal(u, v, i):
-  u ^= (u ^ (v & (1 << i)))
+  u ^= ((u ^ v) & (1 << i))
   return u
 
 def correct_bit_zero(u, i):
@@ -31,7 +31,6 @@ def correct_bit_one(u, i):
 def undo_little_endian_words(x):
   m = b''
   for xi in x:
-    print(xi)
     m += struct.pack('<I', xi)
   return m
 
@@ -44,14 +43,15 @@ def do_op(state, j, i, s, x, constraints):
   # correct the bits according to the constraints
   for constraint in constraints:
     if   constraint[0] == 'equ':
-      correct_bit_equal(v, state[(j+1)%4], constraint[1])
+      v = correct_bit_equal(v, state[(j+1)%4], constraint[1])
     elif constraint[0] == 'zer':
-      correct_bit_zero(v, constraint[1])
+      v = correct_bit_zero(v, constraint[1])
     elif constraint[0] == 'one':
-      correct_bit_one(v, constraint[1])
+      v = correct_bit_one(v, constraint[1])
 
   # compute the correct message word using algebra
   x[i] = rrot(v, s) - state[j%4] - f(state[(j+1)%4], state[(j+2)%4], state[(j+3)%4])
+  x[i] = x[i] % (1 << 32)
 
   # update the state
   state[j%4] = v
@@ -200,6 +200,8 @@ def generate_probable_collision():
     do_op(state, i, i, shifts[i], x, constraints[i])
 
   mprime = undo_little_endian_words(x)
+  print(pretty_print_hex(m))
+  print(pretty_print_hex(mprime))
   if hashes.MD4(m) == hashes.MD4(mprime):
     return m, mprime
 
