@@ -17,15 +17,21 @@ def rrot(m, s): return hashes._right_rotate(m, s)
 # helper methods to adjust the state variables
 # to satisfy wang's constraints
 def correct_bit_equal(u, v, i):
+  b = u
   u ^= ((u ^ v) & (1 << i))
+  print('EQU {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def correct_bit_zero(u, i):
+  b = u
   u &= ~(1 << i)
+  print('ZER {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def correct_bit_one(u, i):
+  b = u
   u |= (1 << i)
+  print('ONE {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def undo_little_endian_words(x):
@@ -57,9 +63,16 @@ def do_op(state, j, i, s, x, constraints):
   state[j%4] = v
   return
 
+def modify_weak_message(m):
+  x = list(hashes.little_endian_words(m))
+  x[1] = (x[1] + (1 << 31)) % (1 << 32)
+  x[2] = (x[2] + ((1 << 31) - (1 << 28))) % (1 << 32)
+  x[12] = (x[12] - (1 << 16)) % (1 << 32)
+  return undo_little_endian_words(x)
 
 def generate_probable_collision():
   m = util.random_byte_string(64) # 128 bits
+  m = binascii.unhexlify('839c7a4d7a92cb5678a5d5b9eea5a7573c8a74deb366c3dc20a083b69f5d2a3bb3719dc69891e9f95e809fd7e8b23ba6318edd45e51fe39708bf9427e9c3e8b9')
   x = list(hashes.little_endian_words(m))
 
   state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
@@ -127,7 +140,7 @@ def generate_probable_collision():
       ['zer', 19],
       ['zer', 20],
       ['equ', 22],
-      ['equ', 21],
+      ['one', 21],
       ['equ', 25]
     ],
     [
@@ -195,11 +208,14 @@ def generate_probable_collision():
   ]
 
   shifts = [3, 7, 11, 19] * 4
+  starts = [0, 3, 2, 1] * 4
 
   for i in range(16):
-    do_op(state, i, i, shifts[i], x, constraints[i])
+    print('{} ***'.format(i))
+    do_op(state, starts[i], i, shifts[i], x, constraints[i])
 
-  mprime = undo_little_endian_words(x)
+  m = undo_little_endian_words(x)
+  mprime = modify_weak_message(m)
   print(pretty_print_hex(m))
   print(pretty_print_hex(mprime))
   if hashes.MD4(m) == hashes.MD4(mprime):
