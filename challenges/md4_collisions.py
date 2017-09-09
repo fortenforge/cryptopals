@@ -7,6 +7,8 @@ import struct
 #   * Wang et. al uses 1-indexing in their paper, for reasons
 #     passing understanding. We'll use 0-indexing here.
 
+count = 0
+
 def f(x, y, z): return hashes._f(x, y, z)
 def g(x, y, z): return hashes._g(x, y, z)
 def h(x, y, z): return hashes._h(x, y, z)
@@ -19,19 +21,19 @@ def rrot(m, s): return hashes._right_rotate(m, s)
 def correct_bit_equal(u, v, i):
   b = u
   u ^= ((u ^ v) & (1 << i))
-  print('EQU {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
+  # print('EQU {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def correct_bit_zero(u, i):
   b = u
   u &= ~(1 << i)
-  print('ZER {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
+  # print('ZER {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def correct_bit_one(u, i):
   b = u
   u |= (1 << i)
-  print('ONE {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
+  # print('ONE {} --> {} ({})'.format(b, u, 'Changed' if b != u else 'Same'))
   return u
 
 def undo_little_endian_words(x):
@@ -40,6 +42,7 @@ def undo_little_endian_words(x):
     m += struct.pack('<I', xi)
   return m
 
+# enforce first-round constraints
 def do_op(state, j, i, s, x, constraints):
   # perform the MD4 operation
   v = lrot(state[j%4] +
@@ -70,13 +73,49 @@ def modify_weak_message(m):
   x[12] = (x[12] - (1 << 16)) % (1 << 32)
   return undo_little_endian_words(x)
 
-def generate_probable_collision():
-  m = util.random_byte_string(64) # 128 bits
-  m = binascii.unhexlify('839c7a4d7a92cb5678a5d5b9eea5a7573c8a74deb366c3dc20a083b69f5d2a3bb3719dc69891e9f95e809fd7e8b23ba6318edd45e51fe39708bf9427e9c3e8b9')
-  x = list(hashes.little_endian_words(m))
+# helper methods to adjust the state variables
+# to satisfy wang's constraints
+def check_bit_equal(u, v, i):
+  assert ((u ^ v) & (1 << i)) == 0
 
+def check_bit_zero(u, i):
+  assert (u & (1 << i)) == 0
+
+def check_bit_one(u, i):
+  assert (u & (1 << i)) != 0
+
+def constraints_checker(x, constraints):
   state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
 
+  w = [0, 3, 2, 1] * 4
+  shifts = [3, 7, 11, 19] * 4
+
+  for i in range(16):
+    state[w[i]] = hashes._f1(state[w[i]],
+                      state[(w[i]+1)%4],
+                      state[(w[i]+2)%4],
+                      state[(w[i]+3)%4],
+                      i,
+                      shifts[i],
+                      x)
+    constraint = constraints[i]
+    for c in constraint:
+      if   c[0] == 'equ':
+        check_bit_equal(state[w[i]], state[w[(i+3)%16]], c[1])
+      elif c[0] == 'zer':
+        check_bit_zero(state[w[i]], c[1])
+      elif c[0] == 'one':
+        check_bit_one(state[w[i]], c[1])
+
+def generate_probable_collision():
+  m = util.random_byte_string(64) # 128 bits
+  # m = binascii.unhexlify('839c7a4d7a92cb5678a5d5b9eea5a7573c8a74deb366c3dc20a083b69f5d2a3bb3719dc69891e9f95e809fd7e8b23ba6318edd45e51fe39708bf9427e9c3e8b9')
+  x = list(hashes.little_endian_words(m))
+
+  initial_state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
+  state = [q for q in initial_state]
+
+  # first round constraints
   constraints = [
     [
       ['equ', 6]
@@ -211,21 +250,113 @@ def generate_probable_collision():
   starts = [0, 3, 2, 1] * 4
 
   for i in range(16):
-    print('{} ***'.format(i))
     do_op(state, starts[i], i, shifts[i], x, constraints[i])
+
+
+  constraints_checker(x, constraints)
+
+  # second-round constraints
+  constraints = [
+    [
+      ['equ', 18, 2],
+      ['one', 25],
+      ['zer', 26],
+      ['one', 28],
+      ['one', 31]
+    ],
+    [
+      ['equ', 18, 1],
+      ['equ', 25, 1],
+      ['equ', 26, 1],
+      ['equ', 28, 1],
+      ['equ', 31, 1]
+    ]
+  ]
+
+  # a5 constraint
+  for constraint in constraints[0]:
+    # compute a5
+    a5 = hashes._f2(state[0], state[1], state[2], state[3], 0, 3, x)
+    q = a5
+
+    # modify a5 to meet the constraints
+    if   constraint[0] == 'equ':
+      a5 ^= ((a5 ^ state[constraint[2]]) & (1 << constraint[1]))
+      # print('EQU {} --> {} ({})'.format(q, a5, 'Changed' if q != a5 else 'Same'))
+
+    elif constraint[0] == 'zer':
+      a5 &= ~(1 << constraint[1])
+      # print('ZER {} --> {} ({})'.format(q, a5, 'Changed' if q != a5 else 'Same'))
+
+    elif constraint[0] == 'one':
+      a5 |= (1 << constraint[1])
+      # print('ONE {} --> {} ({})'.format(q, a5, 'Changed' if q != a5 else 'Same'))
+
+
+  # modify x[0] to result in our new a5
+  q = (rrot(a5, 3) - state[0] - g(state[1], state[2], state[3]) - 0x5a827999) % (1 << 32)
+  # print('AAA {} --> {} ({})'.format(x[0], q, 'Changed' if q != x[0] else 'Same'))
+
+  # do the multi-step corrections
+  a0, b0, c0, d0 = initial_state[0], initial_state[1], initial_state[2], initial_state[3]
+  a1prime = hashes._f1(a0,b0,c0,d0, 0, 3, [q])
+  a1 = hashes._f1(a0,b0,c0,d0, 0, 3, x)
+  d1 = hashes._f1(d0,a1,b0,c0, 1, 7, x)
+  x[0] = q
+  q = x[1]
+  x[1] = (rrot(d1,  7) - d0 - f(a1, b0, c0)) % (1 << 32)
+  # print('BBB {} --> {} ({})'.format(q, x[1], 'Changed' if q != x[1] else 'Same'))
+  c1 = hashes._f1(c0,d1,a1,b0, 2, 11, x)
+  x[2] = (rrot(c1, 11) - c0 - f(d1, a1, b0)) % (1 << 32)
+  b1 = hashes._f1(b0,c1,d1,a1, 3, 19, x)
+  x[3] = (rrot(b1, 19) - b0 - f(c1, d1, a1)) % (1 << 32)
+  a2 = hashes._f1(a1,b1,c1,d1, 4, 3, x)
+  x[4] = (rrot(a2,  3) - a1 - f(b1, c1, d1)) % (1 << 32)
+
+  state[0] = a5
+
+  # d5 constraint
+  # for constraint in constraints[1]:
+  #   # compute d5
+  #   d5 = hashes._f2(state[3], state[0], state[1], state[2], 4, 5, x)
+  #
+  #   # modify d5 to meet the constraints
+  #   if   constraint[0] == 'equ':
+  #     d5 ^= ((d5 ^ state[constraint[2]]) & (1 << constraint[1]))
+  #   elif constraint[0] == 'zer':
+  #     d5 &= ~(1 << constraint[1])
+  #   elif constraint[0] == 'one':
+  #     d5 |= (1 << constraint[1])
+  #
+  #   # modify x[4] to result in our new d5
+  #   x[4] = (rrot(d5, 5) - state[3] - g(state[0], state[1], state[2])- 0x5a827999) % (1 << 32)
+  #
+  #   # do the multi-step corrections
+  #   a, b, c, d = initial_state[0], initial_state[1], initial_state[2], initial_state[3]
+  #   a = _f1(a,b,c,d, 0, 3, x)
+  #   d = _f1(d,a,b,c, 1, 7, x)
+  #   c = _f1(c,d,a,b, 2,11, x)
+  #   b = _f1(b,c,d,a, 3,19, x)
+  #
+
 
   m = undo_little_endian_words(x)
   mprime = modify_weak_message(m)
-  print(pretty_print_hex(m))
-  print(pretty_print_hex(mprime))
+  # print(pretty_print_hex(m))
+  # print(pretty_print_hex(mprime))
   if hashes.MD4(m) == hashes.MD4(mprime):
     return m, mprime
+  return None, None
 
 def generate_collision():
   while True:
     ma, mb = generate_probable_collision()
     if ma:
       break
+    global count
+    count += 1
+    if count % 100 == 0:
+      print(count)
   return ma, mb
 
 def pretty_print_hex(x):
