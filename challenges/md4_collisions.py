@@ -6,6 +6,11 @@ import struct
 # Notes
 #   * Wang et. al uses 1-indexing in their paper, for reasons
 #     passing understanding. We'll use 0-indexing here.
+#   * After about 2 million tries, this script produced a brand new
+#     md4 collision:
+#     m1 = a6af943ce36f0cf4adcb12bef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9b0d384d06ef3118bbc643ae6384
+#     m2 = a6af943ce36f0c74adcb122ef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9a0d384d06ef3118bbc643ae6384
+#     md4_hash = 6725aa416acc1e6adcb64c41f0f60694
 
 count = 0
 
