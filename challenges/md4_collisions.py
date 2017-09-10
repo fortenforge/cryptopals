@@ -2,6 +2,7 @@ from utilities import hashes
 from utilities import util
 import binascii
 import struct
+import time
 
 # Notes
 #   * Wang et. al uses 1-indexing in their paper, for reasons
@@ -269,6 +270,7 @@ def generate_probable_collision():
       ['one', 26],
       ['one', 28],
       ['zer', 29],
+      ['equ', 31]
     ],
   ]
 
@@ -401,6 +403,7 @@ def pretty_print_hex(x):
   return binascii.hexlify(x).decode('utf-8')
 
 if __name__ == '__main__':
+  start_time = time.time()
   m1, m2 = generate_collision()
   assert m1 != m2
   h1 = hashes.MD4(m1)
@@ -413,3 +416,4 @@ if __name__ == '__main__':
 
   assert h1 == h2
   print('Success!')
+  print("--- %s seconds ---" % (time.time() - start_time))
