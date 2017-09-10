@@ -12,6 +12,11 @@ import time
 #     m1 = a6af943ce36f0cf4adcb12bef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9b0d384d06ef3118bbc643ae6384
 #     m2 = a6af943ce36f0c74adcb122ef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9a0d384d06ef3118bbc643ae6384
 #     md4_hash = 6725aa416acc1e6adcb64c41f0f60694
+#   * I've implemented all by 19 of the "sufficient" constraints according to
+#     Wang. Later researchers have shown that Wang's conditions are not entirely
+#     sufficient (https://eprint.iacr.org/2005/151.pdf). This work implies that
+#     2^(19 + 2) = around 2 million tries on expectation are required to find
+#     a collision. This seems to be borne out by experimental results.
 
 count = 0
 
@@ -23,7 +28,7 @@ def lrot(m, s): return hashes._left_rotate(m, s)
 def rrot(m, s): return hashes._right_rotate(m, s)
 
 # helper methods to adjust the state variables
-# to satisfy wang's constraints
+# to satisfy Wang's constraints
 def correct_bit_equal(u, v, i):
   b = u
   u ^= ((u ^ v) & (1 << i))
@@ -72,15 +77,17 @@ def do_op(state, j, i, s, x, constraints):
   state[j%4] = v
   return
 
-def modify_weak_message(m):
+# When given a weak message (i.e. a message that satisfies all or most of Wang's
+# constraints, this function flips a few bits and returns a potentially
+# colliding message
+def create_colliding_message(m):
   x = list(hashes.little_endian_words(m))
   x[1] = (x[1] + (1 << 31)) % (1 << 32)
   x[2] = (x[2] + ((1 << 31) - (1 << 28))) % (1 << 32)
   x[12] = (x[12] - (1 << 16)) % (1 << 32)
   return undo_little_endian_words(x)
 
-# helper methods to adjust the state variables
-# to satisfy wang's constraints
+# helper methods to check Wang's constraints
 def check_bit_equal(u, v, i):
   assert ((u ^ v) & (1 << i)) == 0
 
@@ -90,6 +97,8 @@ def check_bit_zero(u, i):
 def check_bit_one(u, i):
   assert (u & (1 << i)) != 0
 
+# This function checks that a given message satisfies all the programmed
+# constraints (for debugging purposes)
 def constraints_checker(x, constraints, constraints2):
   state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
 
@@ -135,8 +144,8 @@ def constraints_checker(x, constraints, constraints2):
       check_bit_one(state[3], c[1])
 
 def generate_probable_collision():
+  # generate random initial message
   m = util.random_byte_string(64) # 128 bits
-  # m = binascii.unhexlify('839c7a4d7a92cb5678a5d5b9eea5a7573c8a74deb366c3dc20a083b69f5d2a3bb3719dc69891e9f95e809fd7e8b23ba6318edd45e51fe39708bf9427e9c3e8b9')
   x = list(hashes.little_endian_words(m))
 
   initial_state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
@@ -290,8 +299,8 @@ def generate_probable_collision():
       ['one', 31]
     ],
     [
-      # ['equ', 18, 0],
-      # ['equ', 25, 1],
+      # ['equ', 18, 0], # for some reason these 3 constraints aren't being
+      # ['equ', 25, 1], # reliably satisfied using Wang's multi-step technique
       # ['equ', 26, 1],
       ['equ', 28, 1],
       ['equ', 31, 1]
@@ -377,13 +386,12 @@ def generate_probable_collision():
   a3 = hashes._f1(a2,b2,c2,d2, 8, 3, x)
   x[8] = (rrot(a3,  3) - a2prime - f(b2, c2, d2)) % (1 << 32)
 
-
+  # confirm that all our constraints are satisfied
   constraints_checker(x, constraints, constraints2)
 
   m = undo_little_endian_words(x)
-  mprime = modify_weak_message(m)
-  # print(pretty_print_hex(m))
-  # print(pretty_print_hex(mprime))
+  mprime = create_colliding_message(m)
+
   if hashes.MD4(m) == hashes.MD4(mprime):
     return m, mprime
   return None, None
