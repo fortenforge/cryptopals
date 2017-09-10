@@ -12,10 +12,12 @@ import time
 #     m1 = a6af943ce36f0cf4adcb12bef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9b0d384d06ef3118bbc643ae6384
 #     m2 = a6af943ce36f0c74adcb122ef7f0dc1f526dd914bd3da3cafde14467ab129e640b4c41819915cb43db752155ae4b895fc71b9a0d384d06ef3118bbc643ae6384
 #     md4_hash = 6725aa416acc1e6adcb64c41f0f60694
-#   * I've implemented all by 19 of the "sufficient" constraints according to
+#   * I've implemented all but 19 of the "sufficient" constraints according to
 #     Wang. Later researchers have shown that Wang's conditions are not entirely
-#     sufficient (https://eprint.iacr.org/2005/151.pdf). This work implies that
-#     2^(19 + 2) = around 2 million tries on expectation are required to find
+#     sufficient (https://eprint.iacr.org/2005/151.pdf). I have also included
+#     one (out of 2) additional constraint from this paper (marked below).
+#   * There are then a total of 19 + 1 = 20 unsatisfied constraints. This implies
+#     2^20 = around 1 million tries on expectation are required to find
 #     a collision. This seems to be borne out by experimental results.
 
 count = 0
@@ -279,7 +281,7 @@ def generate_probable_collision():
       ['one', 26],
       ['one', 28],
       ['zer', 29],
-      ['equ', 31]
+      ['equ', 31]  # extra constraint from Naito, et al.
     ],
   ]
 
@@ -387,7 +389,7 @@ def generate_probable_collision():
   x[8] = (rrot(a3,  3) - a2prime - f(b2, c2, d2)) % (1 << 32)
 
   # confirm that all our constraints are satisfied
-  constraints_checker(x, constraints, constraints2)
+  # constraints_checker(x, constraints, constraints2)
 
   m = undo_little_endian_words(x)
   mprime = create_colliding_message(m)
