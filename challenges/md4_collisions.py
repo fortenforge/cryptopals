@@ -1,5 +1,6 @@
 from utilities import hashes
 from utilities import util
+from Crypto.Hash import MD4
 import binascii
 import struct
 import time
@@ -394,7 +395,7 @@ def generate_probable_collision():
   m = undo_little_endian_words(x)
   mprime = create_colliding_message(m)
 
-  if hashes.MD4(m) == hashes.MD4(mprime):
+  if MD4.new(data=m).digest() == MD4.new(data=mprime).digest():
     return m, mprime
   return None, None
 
