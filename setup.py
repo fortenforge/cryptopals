@@ -12,6 +12,6 @@ setup(
   install_requires = [
     'pycrypto == 2.6.1',
     'flask == 1.0',
-    'urllib3 == 1.24.2'
+    'urllib3 == 1.26.5'
   ]
 )
